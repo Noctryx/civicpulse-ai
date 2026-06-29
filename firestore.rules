@@ -130,5 +130,11 @@ service cloud.firestore {
       // Users can read and write to their own user document
       allow read, write: if isSignedIn() && request.auth.uid == userId;
     }
+
+    // Rules for notifications collection
+    match /notifications/{notificationId} {
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn();
+    }
   }
 }

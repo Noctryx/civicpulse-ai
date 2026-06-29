@@ -1,5 +1,5 @@
 import { useState, useEffect, MouseEvent } from "react";
-import { collection, doc, updateDoc, increment, arrayUnion, onSnapshot, query, orderBy } from "firebase/firestore";
+import { collection, doc, updateDoc, increment, arrayUnion, onSnapshot, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType, auth, onAuthStateChanged } from "../firebase";
 import { MapPin, ThumbsUp, Calendar, CheckCircle, Clock, AlertTriangle, Eye, ArrowUpDown, Tag, Loader2, Trophy, Medal, Crown, Star } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -167,8 +167,23 @@ export default function CommunityFeed() {
       setConfirmedIds(newConfirmed);
       localStorage.setItem("civicpulse_confirmed_reports", JSON.stringify(newConfirmed));
 
-      // Notify the original reporter via FCM
+      // Notify the original reporter via FCM & Firestore
       if (targetReport && targetReport.reporterId && auth.currentUser && targetReport.reporterId !== auth.currentUser.uid) {
+        // 1. Create durable in-app notification in Firestore
+        try {
+          await addDoc(collection(db, "notifications"), {
+            userId: targetReport.reporterId,
+            title: "Community Confirmation",
+            body: `Your report for "${targetReport.category}" just received a community confirmation.`,
+            createdAt: serverTimestamp(),
+            read: false,
+            reportId: reportId
+          });
+        } catch (dbNotifErr) {
+          console.warn("Failed to save in-app notification:", dbNotifErr);
+        }
+
+        // 2. Trigger FCM push notification
         fetch("/api/fcm/notify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

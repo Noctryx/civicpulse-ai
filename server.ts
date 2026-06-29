@@ -1430,18 +1430,12 @@ app.post("/api/maps/grounding", async (req, res) => {
     console.log(`[Maps Grounding] Running query: "${userQuery}" near [${latitude}, ${longitude}]`);
 
     const config: any = {
-      tools: [{ googleMaps: {} }],
+      tools: [{ googleSearch: {} }],
     };
 
+    let promptContext = userQuery;
     if (latitude && longitude && latitude !== 0 && longitude !== 0) {
-      config.toolConfig = {
-        retrievalConfig: {
-          latLng: {
-            latitude,
-            longitude,
-          },
-        },
-      };
+      promptContext = `The user's current location is Latitude: ${latitude}, Longitude: ${longitude}. Please answer their query accurately based on this location. Use Google Search to find real-world local answers to their query. Query: "${userQuery}"`;
     }
 
     let response;
@@ -1451,7 +1445,7 @@ app.post("/api/maps/grounding", async (req, res) => {
     try {
       response = await ai.models.generateContent({
         model: "gemini-3.5-flash",
-        contents: userQuery,
+        contents: promptContext,
         config,
       });
     } catch (groundingErr: any) {

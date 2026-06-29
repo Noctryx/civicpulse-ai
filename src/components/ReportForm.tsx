@@ -2,6 +2,7 @@ import {
   useState,
   useEffect,
   useRef,
+  useCallback,
   DragEvent,
   ChangeEvent,
   FormEvent,
@@ -87,10 +88,19 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
   const cameraStreamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
-    if (isCameraActive && videoRef.current && cameraStreamRef.current) {
-      videoRef.current.srcObject = cameraStreamRef.current;
+    return () => {
+      if (cameraStreamRef.current) {
+        cameraStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
+
+  const setVideoRef = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node && cameraStreamRef.current) {
+      node.srcObject = cameraStreamRef.current;
     }
-  }, [isCameraActive]);
+  }, []);
 
   const startCamera = async () => {
     try {
@@ -371,7 +381,7 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
       },
       (error) => {
         setLocating(false);
-        console.error("Geolocation error:", error);
+        console.warn("Geolocation warning/error:", error.message || error);
         switch (error.code) {
           case error.PERMISSION_DENIED:
             setLocationError(
@@ -390,7 +400,7 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
             setLocationError("An unknown location error occurred.");
         }
       },
-      { enableHighAccuracy: true, timeout: 10000 },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 },
     );
   };
 
@@ -827,7 +837,7 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
                     ) : isCameraActive ? (
                       <div className="w-full max-h-[300px] flex flex-col items-center gap-3 relative">
                         <video
-                          ref={videoRef}
+                          ref={setVideoRef}
                           autoPlay
                           playsInline
                           muted

@@ -18,9 +18,12 @@ import {
   Loader2,
   Sun,
   Moon,
+  Bell,
+  Check,
+  Trash,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, updateDoc, doc, orderBy, deleteDoc } from "firebase/firestore";
 import {
   auth,
   googleProvider,
@@ -70,6 +73,85 @@ export default function App() {
     );
     return () => unsubscribe();
   }, [user]);
+
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+    // Query notifications collection where userId == user.uid ordered by createdAt desc
+    const q = query(
+      collection(db, "notifications"),
+      where("userId", "==", user.uid),
+      orderBy("createdAt", "desc")
+    );
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const list: any[] = [];
+        snapshot.forEach((docSnap) => {
+          list.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        setNotifications(list);
+      },
+      (error) => {
+        console.warn("Could not load notifications from Firestore (may be index building or rule limitation):", error);
+        // Fallback to simpler query without order if index is missing
+        const qFallback = query(
+          collection(db, "notifications"),
+          where("userId", "==", user.uid)
+        );
+        onSnapshot(qFallback, (snapshot) => {
+          const list: any[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          // Sort in memory
+          list.sort((a, b) => {
+            const timeA = a.createdAt?.seconds ? a.createdAt.seconds : 0;
+            const timeB = b.createdAt?.seconds ? b.createdAt.seconds : 0;
+            return timeB - timeA;
+          });
+          setNotifications(list);
+        }, (fallbackError) => {
+          console.warn("Notifications fallback query also failed:", fallbackError);
+        });
+      }
+    );
+    return () => unsubscribe();
+  }, [user]);
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await updateDoc(doc(db, "notifications", notificationId), {
+        read: true,
+      });
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      const promises = notifications
+        .filter((n) => !n.read)
+        .map((n) => updateDoc(doc(db, "notifications", n.id), { read: true }));
+      await Promise.all(promises);
+    } catch (err) {
+      console.error("Failed to mark all as read:", err);
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId: string) => {
+    try {
+      await deleteDoc(doc(db, "notifications", notificationId));
+    } catch (err) {
+      console.error("Failed to delete notification:", err);
+    }
+  };
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return (
@@ -270,7 +352,7 @@ export default function App() {
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                    <path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.859-3.578-7.859-8s3.53-8 7.859-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1 6.033 1 12.24s5.033 11.24 11.24 11.24c6.478 0 10.793-4.537 10.793-10.986 0-.74-.08-1.303-.178-1.859H12.24z" />
+                    <path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.859-3.578-7.859-8s3.53-8 7.859-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1c-6.207 0-11.24 5.033-11.24 11.24s5.033 11.24 11.24 11.24c6.478 0 10.793-4.537 10.793-10.986 0-.74-.08-1.303-.178-1.859H12.24z" />
                   </svg>
                 )}
                 {signInLoading
@@ -489,6 +571,116 @@ export default function App() {
                   })()}
                 </div>
               </div>
+              {/* Durable Notification Center Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotificationsDropdown((prev) => !prev)}
+                  className="p-1.5 md:p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-lg border border-slate-200 dark:border-slate-700 transition cursor-pointer relative"
+                  title="In-App Notification Center"
+                >
+                  <Bell className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  {notifications.filter((n) => !n.read).length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center border border-white dark:border-slate-800 shadow-2xs animate-pulse">
+                      {notifications.filter((n) => !n.read).length}
+                    </span>
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {showNotificationsDropdown && (
+                    <>
+                      {/* Click overlay to close */}
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowNotificationsDropdown(false)}
+                      />
+                      
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl z-50 overflow-hidden"
+                      >
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Citizen Updates</h3>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400">Durable notification sync center</p>
+                          </div>
+                          {notifications.filter((n) => !n.read).length > 0 && (
+                            <button
+                              onClick={() => {
+                                handleMarkAllAsRead();
+                                setShowNotificationsDropdown(false);
+                              }}
+                              className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                            >
+                              Mark all as read
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
+                          {notifications.length === 0 ? (
+                            <div className="p-8 text-center flex flex-col items-center justify-center space-y-2">
+                              <div className="p-2 bg-indigo-50 dark:bg-slate-800 rounded-full text-indigo-600 dark:text-indigo-400">
+                                <Bell className="w-5 h-5 text-indigo-400" />
+                              </div>
+                              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">All caught up!</p>
+                              <p className="text-[10px] text-slate-400 dark:text-slate-500">No new alerts or status updates currently logged.</p>
+                            </div>
+                          ) : (
+                            notifications.map((n) => (
+                              <div
+                                key={n.id}
+                                className={`p-4 transition-all flex gap-3 items-start relative ${
+                                  !n.read
+                                    ? "bg-indigo-50/40 dark:bg-indigo-950/25"
+                                    : "hover:bg-slate-50/80 dark:hover:bg-slate-850/20"
+                                }`}
+                              >
+                                {!n.read && (
+                                  <div className="absolute top-4 left-2 w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400" />
+                                )}
+                                <div className="flex-1 space-y-1 pl-1">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <h4 className={`text-xs font-bold text-slate-900 dark:text-white ${!n.read ? "text-indigo-900 dark:text-indigo-300" : ""}`}>
+                                      {n.title}
+                                    </h4>
+                                    <span className="text-[9px] text-slate-400 dark:text-slate-500 shrink-0 font-mono">
+                                      {n.createdAt ? new Date(n.createdAt.seconds ? n.createdAt.seconds * 1000 : n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal">
+                                    {n.body}
+                                  </p>
+                                  <div className="flex items-center gap-3 pt-1">
+                                    {!n.read && (
+                                      <button
+                                        onClick={() => handleMarkAsRead(n.id)}
+                                        className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                                      >
+                                        <Check className="w-2.5 h-2.5" /> Mark read
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => handleDeleteNotification(n.id)}
+                                      className="text-[9px] font-bold text-slate-400 hover:text-red-500 flex items-center gap-0.5 cursor-pointer"
+                                    >
+                                      <Trash className="w-2.5 h-2.5" /> Delete
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+
               <button
                 onClick={() => setIsDarkMode((prev) => !prev)}
                 className="p-1.5 md:p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-lg border border-slate-200 dark:border-slate-700 transition cursor-pointer"

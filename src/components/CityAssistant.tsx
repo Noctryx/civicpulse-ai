@@ -34,9 +34,10 @@ export default function CityAssistant() {
         setLocating(false);
       },
       (err) => {
-        console.error("Assistant location access denied:", err);
+        console.warn("Assistant location access warning/error:", err.message);
         setLocating(false);
-      }
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 }
     );
   };
 
@@ -77,10 +78,13 @@ export default function CityAssistant() {
 
       chunks.forEach((chunk: any) => {
         if (chunk.web && chunk.web.uri) {
+          const uri = chunk.web.uri.toLowerCase();
+          const isMap = uri.includes("google.com/maps") || uri.includes("maps.app.goo.gl") || uri.includes("maps.google.com");
+          
           extractedSources.push({
-            title: chunk.web.title || "Verified Web Resource",
+            title: chunk.web.title || (isMap ? "Google Maps Place Profile" : "Verified Web Resource"),
             url: chunk.web.uri,
-            type: "web",
+            type: isMap ? "maps" : "web",
           });
         } else if (chunk.maps && chunk.maps.uri) {
           extractedSources.push({

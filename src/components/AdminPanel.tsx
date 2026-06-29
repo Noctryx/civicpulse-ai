@@ -1,5 +1,5 @@
 import { useState, useEffect, MouseEvent } from "react";
-import { collection, doc, updateDoc, onSnapshot, query, orderBy } from "firebase/firestore";
+import { collection, doc, updateDoc, onSnapshot, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
 import { db, auth, handleFirestoreError, OperationType } from "../firebase";
 import { Report } from "../types";
 import { Search, Filter, CheckCircle2, MapPin, Loader2, AlertTriangle, ArrowUpDown, Calendar, HelpCircle, FileText, Eye, Bell, ShieldAlert, Zap } from "lucide-react";
@@ -206,9 +206,24 @@ export default function AdminPanel() {
         resolvedAt: new Date().toISOString()
       });
 
-      // Notify the original reporter via FCM
+      // Notify the original reporter via FCM & Firestore
       const targetReport = reports.find(r => r.id === reportId);
       if (targetReport && targetReport.reporterId) {
+        // 1. Create durable in-app notification in Firestore
+        try {
+          await addDoc(collection(db, "notifications"), {
+            userId: targetReport.reporterId,
+            title: "Report Resolved",
+            body: `Your report for "${targetReport.category}" has been marked as resolved by an administrator.`,
+            createdAt: serverTimestamp(),
+            read: false,
+            reportId: reportId
+          });
+        } catch (dbNotifErr) {
+          console.warn("Failed to save in-app notification:", dbNotifErr);
+        }
+
+        // 2. Trigger FCM push notification
         fetch("/api/fcm/notify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
