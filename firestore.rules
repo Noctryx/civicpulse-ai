@@ -120,8 +120,8 @@ service cloud.firestore {
       // Anyone can read alerts
       allow read, list: if true;
 
-      // Anyone (including guests and the background server-side daemon) can manage alerts
-      allow create, update, delete: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn();
     }
 
     // Rules for users collection (FCM Tokens)

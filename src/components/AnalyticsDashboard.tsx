@@ -7,6 +7,7 @@ import { BarChart3, AlertTriangle, CheckCircle, Clock, ShieldAlert, Sparkles, Tr
 import { motion } from "motion/react";
 import { Map as PigeonMap, Marker as PigeonMarker } from "pigeon-maps";
 import { APIProvider, Map as GoogleMap, AdvancedMarker, Pin } from "@vis.gl/react-google-maps";
+import { AnimatedCounter } from "./AnimatedCounter";
 import ReportDetailModal from "./ReportDetailModal";
 import { Skeleton } from "./Skeleton";
 
@@ -427,9 +428,9 @@ export default function AnalyticsDashboard() {
   const customTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white px-3 py-2 border border-gray-100 shadow-md rounded-xl text-xs font-semibold">
-          <p className="text-gray-500 font-bold">{payload[0].name}</p>
-          <p className="text-blue-600 font-mono mt-0.5">Value: {payload[0].value}</p>
+        <div className="bg-white dark:bg-slate-900 px-3 py-2 border border-gray-100 dark:border-slate-800 shadow-md rounded-xl text-xs font-semibold">
+          <p className="text-gray-500 dark:text-slate-400 font-bold">{payload[0].name}</p>
+          <p className="text-blue-600 dark:text-indigo-400 font-mono mt-0.5">Value: {payload[0].value}</p>
         </div>
       );
     }
@@ -482,7 +483,7 @@ export default function AnalyticsDashboard() {
               <p className="text-xs text-slate-400 mt-1 leading-relaxed">Based on active reports density, resolution rate, and upvote weight.</p>
             </div>
             <div className="flex flex-col items-end shrink-0">
-              <span className="text-3xl font-black text-white">{cityHealthScore}<span className="text-xs text-slate-500">/100</span></span>
+              <span className="text-3xl font-black text-white"><AnimatedCounter value={cityHealthScore} /><span className="text-xs text-slate-500">/100</span></span>
               <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full mt-1.5 flex items-center gap-1 ${
                 cityHealthScore >= 80 
                   ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
@@ -529,7 +530,7 @@ export default function AnalyticsDashboard() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Reports</p>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1">{totalReports}</h3>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1"><AnimatedCounter value={totalReports} /></h3>
             </div>
           </motion.div>
         )}
@@ -555,7 +556,7 @@ export default function AnalyticsDashboard() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Pending Issues</p>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1">{pendingReports}</h3>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1"><AnimatedCounter value={pendingReports} /></h3>
             </div>
           </motion.div>
         )}
@@ -581,7 +582,7 @@ export default function AnalyticsDashboard() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Resolved</p>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1">{resolvedReports}</h3>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1"><AnimatedCounter value={resolvedReports} /></h3>
             </div>
           </motion.div>
         )}
@@ -607,7 +608,7 @@ export default function AnalyticsDashboard() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">High Severity</p>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1">{highSeverityReports}</h3>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1"><AnimatedCounter value={highSeverityReports} /></h3>
             </div>
           </motion.div>
         )}
@@ -634,7 +635,7 @@ export default function AnalyticsDashboard() {
             <div>
               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Avg Resolution</p>
               <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1">
-                {avgResolutionDays > 0 ? `${avgResolutionDays}d` : "N/A"}
+                {avgResolutionDays > 0 ? <AnimatedCounter value={`${avgResolutionDays}d`} /> : "N/A"}
               </h3>
             </div>
           </motion.div>
@@ -1314,7 +1315,7 @@ export default function AnalyticsDashboard() {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                   <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip cursor={{ fill: "#f1f5f9" }} content={customTooltip} />
+                  <Tooltip cursor={{ fill: "transparent" }} content={customTooltip} />
                   <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={32}>
                     {categoryData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={index === 0 ? "#4f46e5" : "#6366f1"} />

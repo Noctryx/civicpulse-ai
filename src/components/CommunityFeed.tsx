@@ -168,7 +168,7 @@ export default function CommunityFeed() {
             title: "Community Confirmation",
             body: `Your report for "${targetReport.category}" just received a community confirmation.`
           })
-        }).catch(err => console.log("FCM trigger failed:", err));
+        }).catch(err => console.warn("FCM trigger failed:", err));
       }
     } catch (err: unknown) {
       alert("Failed to confirm report. Check connection or quota limit.");
@@ -327,7 +327,7 @@ export default function CommunityFeed() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.98 }}
                     transition={{ type: "spring", damping: 20, stiffness: 120 }}
-                    className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100/90 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow relative animate-fade-in"
+                    className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100/90 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col justify-between hover:-translate-y-[2px] hover:shadow-lg transition-all relative animate-fade-in"
                   >
                     {/* Citizen Closure Loop - Green Resolution Banner */}
                     {currentUser && report.reporterId === currentUser.uid && report.status === "Resolved" && (

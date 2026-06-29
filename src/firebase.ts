@@ -100,7 +100,6 @@ export function handleFirestoreError(
 async function testConnection() {
   try {
     await getDocFromServer(doc(db, "test", "connection"));
-    console.log("✅ Firestore connection validated successfully.");
   } catch (error) {
     if (
       error instanceof Error &&

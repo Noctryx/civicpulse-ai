@@ -217,7 +217,7 @@ export default function AdminPanel() {
             title: "Report Resolved",
             body: `Your report for "${targetReport.category}" has been marked as resolved by an administrator.`
           })
-        }).catch(err => console.log("FCM trigger failed:", err));
+        }).catch(err => console.warn("FCM trigger failed:", err));
       }
     } catch (err: unknown) {
       alert("Failed to resolve report. Check connection or quota limit.");

@@ -24,7 +24,7 @@ export default function FCMProvider() {
                   fcmTokens: arrayUnion(token),
                 }, { merge: true });
               } catch (e) {
-                console.log("Error updating FCM token:", e);
+                console.warn("Error updating FCM token:", e);
               }
             }
           }
@@ -44,7 +44,6 @@ export default function FCMProvider() {
       const m = await messaging();
       if (m) {
         onMessage(m, (payload) => {
-          console.log("Received foreground message:", payload);
           toast(
             (t) => (
               <div className="flex flex-col gap-1">

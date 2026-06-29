@@ -68,6 +68,7 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>("");
+  const [successData, setSuccessData] = useState<{ id: string, team: string, score: number } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -263,7 +264,7 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
     // Load Google Picker API
     if (typeof window !== "undefined" && (window as any).gapi) {
       (window as any).gapi.load("picker", () => {
-        console.log("Google Picker API loaded.");
+        // Picker loaded
       });
     }
 
@@ -658,14 +659,16 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
               payload.repeatedFailureRecommendation ||
               "Immediate municipal engineering investigation recommended.",
           });
-          console.log(
-            "[Autonomous AI Action] High-severity recurring issue alert auto-dispatched to system queue!",
-          );
         } catch (alertErr) {
           handleFirestoreError(alertErr, OperationType.CREATE, "alerts");
         }
       }
 
+      setSuccessData({
+        id: docRef.id.slice(0, 8).toUpperCase(),
+        team: payload.assignedTeam || "Central Dispatch",
+        score: payload.priorityScore || 0
+      });
       setSuccessMessage(
         "Thank you for active citizenship. Your report has been analyzed by CivicPulse AI, geolocated, and logged for municipal verification.",
       );
@@ -680,8 +683,9 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
         setDuplicateReport(null);
         setIsSuccess(false);
         setSuccessMessage("");
+        setSuccessData(null);
         onSuccess(); // Switch to feed or notify
-      }, 2500);
+      }, 4000);
     } catch (err: unknown) {
       alert(
         "Failed to submit report. Please check your connection or database quota.",
@@ -716,9 +720,30 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
               <CheckCircle2 className="w-16 h-16" />
             </motion.div>
             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Success!
+              Report Submitted
             </h3>
-            <p className="text-gray-600 dark:text-slate-300 max-w-md font-medium text-sm leading-relaxed">
+            {successData && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mt-2 mb-4 space-y-1"
+              >
+                <p className="text-slate-800 dark:text-slate-200 font-semibold text-lg">
+                  Report #{successData.id}
+                </p>
+                <div className="flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                  <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">
+                    Assigned to {successData.team}
+                  </span>
+                  <span>&middot;</span>
+                  <span className="bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 px-2 py-1 rounded-md font-medium">
+                    AI Priority Score: {successData.score}
+                  </span>
+                </div>
+              </motion.div>
+            )}
+            <p className="text-gray-600 dark:text-slate-300 max-w-md font-medium text-sm leading-relaxed mt-2">
               {successMessage ||
                 "Thank you for active citizenship. Your report has been analyzed by CivicPulse AI, geolocated, and logged for municipal verification and prioritization."}
             </p>
