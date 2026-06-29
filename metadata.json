@@ -1,0 +1,6 @@
+{
+  "name": "CivicPulse AI",
+  "description": "An AI-powered civic issue reporting and prioritization platform that connects citizens and local authorities with real-time classification, severity detection, community confirmations, and analytics.",
+  "requestFramePermissions": ["geolocation", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,218 @@
+{
+  "entities": {
+    "Report": {
+      "title": "Report",
+      "description": "A civic issue report submitted by a citizen and analyzed by Gemini AI",
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string",
+          "description": "The classified civic category of the issue (e.g., Road Hazard, Public Lighting, Sanitation)"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["Low", "Moderate", "High"],
+          "description": "The assessed gravity of the reported issue"
+        },
+        "summary": {
+          "type": "string",
+          "description": "A brief, AI-extracted summary of the issue"
+        },
+        "description": {
+          "type": "string",
+          "description": "The user's original written explanation of the issue"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "Base64 string or image URL if uploaded"
+        },
+        "latitude": {
+          "type": "number",
+          "description": "Latitude coordinates of the issue"
+        },
+        "longitude": {
+          "type": "number",
+          "description": "Longitude coordinates of the issue"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Pending", "Resolved"],
+          "description": "The resolution status of the civic issue"
+        },
+        "confirmations": {
+          "type": "integer",
+          "description": "The count of citizen community verifications confirming the issue"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation"
+        },
+        "suggestedAction": {
+          "type": "string",
+          "description": "AI-suggested action or response recommendations"
+        },
+        "progressStage": {
+          "type": "string",
+          "description": "The current progress stage of resolution"
+        },
+        "assignedTeam": {
+          "type": "string",
+          "description": "The assigned municipal public works team"
+        },
+        "afterImageUrl": {
+          "type": "string",
+          "description": "Image URL or base64 verification photo of the resolved repair"
+        },
+        "severityExplanation": {
+          "type": "string",
+          "description": "Detailed multi-point bullet reasoning of chosen severity"
+        },
+        "confidence": {
+          "type": "integer",
+          "description": "The model visual or text analysis confidence score"
+        },
+        "rootCause": {
+          "type": "string",
+          "description": "The inferred failure origin or systemic root cause"
+        },
+        "riskIfIgnored": {
+          "type": "string",
+          "description": "The predicted escalating risk if the report is ignored"
+        },
+        "affectedCitizens": {
+          "type": "string",
+          "description": "Estimated range of affected local citizens"
+        },
+        "schoolNearby": {
+          "type": "boolean",
+          "description": "True if within close proximity of an educational facility"
+        },
+        "hospitalNearby": {
+          "type": "boolean",
+          "description": "True if close to emergency routing or healthcare site"
+        },
+        "trafficDensity": {
+          "type": "string",
+          "description": "Local calculated traffic speed/volume density category"
+        },
+        "priorityScore": {
+          "type": "integer",
+          "description": "An emergency impact ranking number"
+        },
+        "priorityRank": {
+          "type": "integer",
+          "description": "Calculated emergency prioritized index score"
+        },
+        "responsibleDept": {
+          "type": "string",
+          "description": "The primary response department"
+        },
+        "supportingDept": {
+          "type": "string",
+          "description": "The auxiliary supporting response department"
+        },
+        "estimatedCrew": {
+          "type": "string",
+          "description": "Recommended repair crew size and specialties"
+        },
+        "equipment": {
+          "type": "string",
+          "description": "Specialized machinery or tools required for repair"
+        },
+        "repeatedFailureDetected": {
+          "type": "boolean",
+          "description": "True if coordinates have recurring recent issues"
+        },
+        "repeatedFailureMessage": {
+          "type": "string",
+          "description": "Detailed warning notice for recurring coordinates"
+        },
+        "repeatedFailureRecommendation": {
+          "type": "string",
+          "description": "Advanced technical or engineering remedy guidelines"
+        },
+        "estimatedCost": {
+          "type": "string",
+          "description": "The predicted cost of repair"
+        },
+        "estimatedTime": {
+          "type": "string",
+          "description": "The predicted duration of repair"
+        }
+      },
+      "required": [
+        "category",
+        "severity",
+        "summary",
+        "description",
+        "latitude",
+        "longitude",
+        "status",
+        "confirmations",
+        "createdAt"
+      ]
+    },
+    "Alert": {
+      "title": "Alert",
+      "description": "An autonomous AI system-triggered emergency alert for recurring high severity issues",
+      "type": "object",
+      "properties": {
+        "reportId": {
+          "type": "string",
+          "description": "ID of the associated high severity report"
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the alert issue"
+        },
+        "severity": {
+          "type": "string",
+          "description": "The severity of the alert (always High)"
+        },
+        "summary": {
+          "type": "string",
+          "description": "A summary of the emergency issue"
+        },
+        "latitude": {
+          "type": "number",
+          "description": "Latitude coordinate"
+        },
+        "longitude": {
+          "type": "number",
+          "description": "Longitude coordinate"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation"
+        },
+        "repeatedFailureMessage": {
+          "type": "string",
+          "description": "Reason details for alert trigger"
+        },
+        "repeatedFailureRecommendation": {
+          "type": "string",
+          "description": "Engineering recommendation"
+        }
+      },
+      "required": [
+        "reportId",
+        "category",
+        "severity",
+        "summary",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "A public registry of geotagged civic issue reports and their confirmation counts"
+    },
+    "/alerts/{alertId}": {
+      "schema": "Alert",
+      "description": "Autonomous AI-triggered alerts queue for high-priority repeated infrastructure issues"
+    }
+  }
+}

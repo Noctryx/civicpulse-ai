@@ -1,0 +1,127 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net - Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable, hardened global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidReport(data) {
+      return data.category is string 
+        && data.category.size() <= 100
+        && data.severity is string 
+        && (data.severity == 'Low' || data.severity == 'Moderate' || data.severity == 'High')
+        && data.summary is string 
+        && data.summary.size() <= 1000
+        && data.description is string 
+        && data.description.size() <= 5000
+        && (data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() <= 5000000))
+        && data.latitude is number
+        && data.longitude is number
+        && data.status is string 
+        && (data.status == 'Pending' || data.status == 'Verified' || data.status == 'Assigned' || data.status == 'In Progress' || data.status == 'Resolved')
+        && data.confirmations is int
+        && data.createdAt is timestamp
+        // Handle optional and additional AI Civic Intelligence fields cleanly with size checks supporting null
+        && (!('suggestedAction' in data) || data.suggestedAction == null || (data.suggestedAction is string && data.suggestedAction.size() <= 5000))
+        && (!('assignedTeam' in data) || data.assignedTeam == null || (data.assignedTeam is string && data.assignedTeam.size() <= 500))
+        && (!('estimatedCost' in data) || data.estimatedCost == null || (data.estimatedCost is string && data.estimatedCost.size() <= 100))
+        && (!('estimatedTime' in data) || data.estimatedTime == null || (data.estimatedTime is string && data.estimatedTime.size() <= 100))
+        && (!('progressStage' in data) || data.progressStage == null || (data.progressStage is string && data.progressStage.size() <= 100))
+        && (!('severityExplanation' in data) || data.severityExplanation == null || (data.severityExplanation is string && data.severityExplanation.size() <= 5000))
+        && (!('confidence' in data) || data.confidence == null || (data.confidence is int && data.confidence >= 0 && data.confidence <= 100))
+        && (!('rootCause' in data) || data.rootCause == null || (data.rootCause is string && data.rootCause.size() <= 5000))
+        && (!('riskIfIgnored' in data) || data.riskIfIgnored == null || (data.riskIfIgnored is string && data.riskIfIgnored.size() <= 5000))
+        && (!('affectedCitizens' in data) || data.affectedCitizens == null || (data.affectedCitizens is string && data.affectedCitizens.size() <= 200))
+        && (!('schoolNearby' in data) || data.schoolNearby == null || (data.schoolNearby is bool))
+        && (!('hospitalNearby' in data) || data.hospitalNearby == null || (data.hospitalNearby is bool))
+        && (!('trafficDensity' in data) || data.trafficDensity == null || (data.trafficDensity is string && data.trafficDensity.size() <= 100))
+        && (!('priorityScore' in data) || data.priorityScore == null || (data.priorityScore is int || data.priorityScore is number))
+        && (!('priorityRank' in data) || data.priorityRank == null || (data.priorityRank is int || data.priorityRank is number))
+        && (!('responsibleDept' in data) || data.responsibleDept == null || (data.responsibleDept is string && data.responsibleDept.size() <= 500))
+        && (!('supportingDept' in data) || data.supportingDept == null || (data.supportingDept is string && data.supportingDept.size() <= 500))
+        && (!('estimatedCrew' in data) || data.estimatedCrew == null || (data.estimatedCrew is string && data.estimatedCrew.size() <= 500))
+        && (!('equipment' in data) || data.equipment == null || (data.equipment is string && data.equipment.size() <= 1000))
+        && (!('repeatedFailureDetected' in data) || data.repeatedFailureDetected == null || (data.repeatedFailureDetected is bool))
+        && (!('repeatedFailureMessage' in data) || data.repeatedFailureMessage == null || (data.repeatedFailureMessage is string && data.repeatedFailureMessage.size() <= 5000))
+        && (!('repeatedFailureRecommendation' in data) || data.repeatedFailureRecommendation == null || (data.repeatedFailureRecommendation is string && data.repeatedFailureRecommendation.size() <= 5000))
+        && (!('afterImageUrl' in data) || data.afterImageUrl == null || (data.afterImageUrl is string && data.afterImageUrl.size() <= 5000000))
+        && (!('resolvedAt' in data) || data.resolvedAt == null || (data.resolvedAt is string && data.resolvedAt.size() <= 100));
+    }
+
+    function isValidAlert(data) {
+      return data.reportId is string
+        && data.reportId.size() <= 128
+        && data.category is string
+        && data.category.size() <= 100
+        && data.severity is string
+        && data.severity == 'High'
+        && data.summary is string
+        && data.summary.size() <= 1000
+        && data.latitude is number
+        && data.longitude is number
+        && data.createdAt is timestamp
+        && (!('repeatedFailureMessage' in data) || data.repeatedFailureMessage == null || (data.repeatedFailureMessage is string && data.repeatedFailureMessage.size() <= 5000))
+        && (!('repeatedFailureRecommendation' in data) || data.repeatedFailureRecommendation == null || (data.repeatedFailureRecommendation is string && data.repeatedFailureRecommendation.size() <= 5000));
+    }
+
+    // Helper update transition conditions
+    function isUpvoteAction() {
+      return incoming().confirmations == existing().confirmations + 1
+        && incoming().diff(existing()).affectedKeys().hasOnly(['confirmations']);
+    }
+
+    function isDispatcherAction() {
+      return incoming().diff(existing()).affectedKeys().hasOnly(['progressStage', 'status', 'assignedTeam', 'afterImageUrl', 'resolvedAt'])
+        && (!('progressStage' in incoming()) || incoming().progressStage == null || (incoming().progressStage is string && incoming().progressStage.size() <= 200))
+        && (!('status' in incoming()) || incoming().status == null || (incoming().status == 'Pending' || incoming().status == 'Verified' || incoming().status == 'Assigned' || incoming().status == 'In Progress' || incoming().status == 'Resolved'))
+        && (!('assignedTeam' in incoming()) || incoming().assignedTeam == null || (incoming().assignedTeam is string && incoming().assignedTeam.size() <= 300))
+        && (!('afterImageUrl' in incoming()) || incoming().afterImageUrl == null || (incoming().afterImageUrl is string && incoming().afterImageUrl.size() <= 5000000))
+        && (!('resolvedAt' in incoming()) || incoming().resolvedAt == null || (incoming().resolvedAt is string && incoming().resolvedAt.size() <= 100));
+    }
+
+    // Rules for reports collection
+    match /reports/{reportId} {
+      // Public read access for the community feed and dashboards
+      allow read, list: if true;
+
+      // Allow any signed-in user to submit a civic issue report, as long as it validates strictly
+      allow create: if isSignedIn()
+                    && isValidReport(incoming())
+                    && incoming().status == 'Pending'
+                    && incoming().confirmations == 0
+                    && incoming().createdAt == request.time;
+
+      // Allow updates if authenticated and conforms strictly to either upvoting or operational dispatcher transitions
+      allow update: if isSignedIn()
+                    && (isUpvoteAction() || isDispatcherAction());
+    }
+
+    // Rules for alerts collection
+    match /alerts/{alertId} {
+      // Anyone can read alerts
+      allow read, list: if true;
+
+      // Anyone (including guests and the background server-side daemon) can manage alerts
+      allow create, update, delete: if true;
+    }
+  }
+}
