@@ -341,7 +341,7 @@ Classify this report into one of the standard categories, determine its severity
     let lastError: any = null;
 
     const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-    const modelsToTry = ["gemini-2.5-flash", "gemini-1.5-flash"];
+    const modelsToTry = ["gemini-3.5-flash", "gemini-1.5-flash"];
 
     for (const modelName of modelsToTry) {
       let retries = 3;
@@ -621,7 +621,7 @@ app.post("/api/reports/area-summary", async (req, res) => {
       try {
         console.log(`Generating Area Health Summary for ${reports.length} reports...`);
         const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.5-flash",
           contents: `Analyze the following cluster of municipal reports reported in close geographic proximity.
 Your job is to identify emerging civic patterns, formulate a descriptive neighborhood name (e.g., "Oakwood Heights Residential Pocket" or "Downtown Transit & Commercial District"), assess an overall Area Civic Health Score (0-100), and propose structural/preventative solutions.
 
@@ -810,7 +810,7 @@ app.post("/api/reports/forecast", async (req, res) => {
       try {
         console.log(`[Forecast API] Generating failure forecast for cluster of ${reports.length} reports...`);
         const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.5-flash",
           contents: `You are an expert Predictive Urban Infrastructure AI. Analyze the following geographic cluster of reported municipal complaints. Your job is to identify if these reports point to an impending, systemic, or severe infrastructure failure (e.g. a water main burst, deep road sinkhole, electrical grid blackout, bridge structural issue) within a 30 to 60-day window.
 
 Calculate a realistic, data-driven probability (0 to 100), define the specific target asset system, assess severity, and provide a clear, professional rationale with actionable recommendations.
@@ -955,7 +955,7 @@ app.post("/api/reports/dispatch-brief", async (req, res) => {
       try {
         console.log(`[Dispatch Brief] Generating daily field brief for ${reports.length} pending reports...`);
         const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.5-flash",
           contents: `You are the chief Operations Dispatch Coordinator AI for City Public Works. You have been handed a list of active, pending, unresolved public service complaints in the city. 
           
 Your task is to analyze these complaints geographically and by category, select the highest-urgency items, and synthesize an elegant, highly actionable field crew briefing for today.
@@ -1135,7 +1135,7 @@ export async function analyzeNeighborhoodHealthClusters() {
       try {
         console.log(`[Gemini Utility] Scanning Cluster #${index + 1} with ${cluster.reports.length} reports...`);
         const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.5-flash",
           contents: `Analyze the following cluster of municipal reports reported in close geographic proximity.
 Your job is to identify emerging civic patterns, formulate a descriptive neighborhood name (e.g., "Oakwood Heights Residential Pocket" or "Downtown Transit & Commercial District"), assess an overall Area Civic Health Score (0-100), and propose structural/preventative solutions.
 
@@ -1353,7 +1353,7 @@ Please compare them and:
     });
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents,
       config: {
         responseMimeType: "application/json",
@@ -1450,7 +1450,7 @@ app.post("/api/maps/grounding", async (req, res) => {
 
     try {
       response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.5-flash",
         contents: userQuery,
         config,
       });
@@ -1464,7 +1464,7 @@ They are asking this question: "${userQuery}".
 Since real-time Google Maps Grounding is temporarily experiencing a high load/rate limit, please answer their query directly to the best of your general knowledge. Offer helpful, practical, and constructive civic/geographical advice based on standard urban layouts or general practices for the query.`;
       
       response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.5-flash",
         contents: fallbackPrompt,
       });
     }
@@ -1530,7 +1530,7 @@ app.post("/api/reports/transcribe", async (req, res) => {
     console.log(`[Audio Transcription] Sending audio to Gemini (MIME: ${mimeType || "audio/webm"})...`);
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: [
         {
           inlineData: {
