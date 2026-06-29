@@ -133,8 +133,7 @@ service cloud.firestore {
 
     // Rules for notifications collection
     match /notifications/{notificationId} {
-      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
   }
 }

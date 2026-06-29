@@ -27,6 +27,27 @@ export default function FCMProvider() {
               if ('serviceWorker' in navigator) {
                 registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
                 console.log("Firebase Messaging Service Worker registered successfully:", registration.scope);
+                
+                // Ensure service worker is fully ready and active to prevent "no active Service Worker" subscription failure
+                await navigator.serviceWorker.ready;
+                
+                // Additional safeguard: wait a tiny bit if active is still not set
+                if (!registration.active) {
+                  await new Promise((resolve) => {
+                    const worker = registration.installing || registration.waiting;
+                    if (worker) {
+                      const stateListener = () => {
+                        if (worker.state === 'activated') {
+                          worker.removeEventListener('statechange', stateListener);
+                          resolve(null);
+                        }
+                      };
+                      worker.addEventListener('statechange', stateListener);
+                    } else {
+                      setTimeout(resolve, 500);
+                    }
+                  });
+                }
               }
 
               const token = await getToken(m, { 

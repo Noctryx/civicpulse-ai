@@ -208,11 +208,15 @@ export default function AdminPanel() {
 
       // Notify the original reporter via FCM & Firestore
       const targetReport = reports.find(r => r.id === reportId);
-      if (targetReport && targetReport.reporterId) {
+      if (targetReport) {
+        const recipientId = targetReport.reporterId && targetReport.reporterId !== "anonymous"
+          ? targetReport.reporterId
+          : (auth.currentUser?.uid || "anonymous");
+
         // 1. Create durable in-app notification in Firestore
         try {
           await addDoc(collection(db, "notifications"), {
-            userId: targetReport.reporterId,
+            userId: recipientId,
             title: "Report Resolved",
             body: `Your report for "${targetReport.category}" has been marked as resolved by an administrator.`,
             createdAt: serverTimestamp(),
@@ -224,15 +228,17 @@ export default function AdminPanel() {
         }
 
         // 2. Trigger FCM push notification
-        fetch("/api/fcm/notify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            targetUserId: targetReport.reporterId,
-            title: "Report Resolved",
-            body: `Your report for "${targetReport.category}" has been marked as resolved by an administrator.`
-          })
-        }).catch(err => console.warn("FCM trigger failed:", err));
+        if (recipientId !== "anonymous") {
+          fetch("/api/fcm/notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              targetUserId: recipientId,
+              title: "Report Resolved",
+              body: `Your report for "${targetReport.category}" has been marked as resolved by an administrator.`
+            })
+          }).catch(err => console.warn("FCM trigger failed:", err));
+        }
       }
     } catch (err: unknown) {
       alert("Failed to resolve report. Check connection or quota limit.");

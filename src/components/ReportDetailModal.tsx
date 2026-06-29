@@ -466,13 +466,57 @@ export default function ReportDetailModal({ report, onClose, onConfirm, isConfir
                         else if (nextStage === "Repair Started") statusVal = "In Progress";
                         else if (nextStage === "Resolved") statusVal = "Resolved";
                         try {
-                          const { doc, updateDoc } = await import("firebase/firestore");
-                          const { db } = await import("../firebase");
+                          const { doc, updateDoc, addDoc, collection, serverTimestamp } = await import("firebase/firestore");
+                          const { db, auth } = await import("../firebase");
                           await updateDoc(doc(db, "reports", report.id), {
                             progressStage: nextStage,
                             status: statusVal,
                             resolvedAt: statusVal === "Resolved" ? new Date().toISOString() : null
                           });
+
+                          // Notify reporter with fallback for testing
+                          const recipientId = report.reporterId && report.reporterId !== "anonymous"
+                            ? report.reporterId
+                            : (auth.currentUser?.uid || "anonymous");
+
+                          const stageTitles: Record<string, string> = {
+                            "Reported": "Report Received",
+                            "Verified": "Report Verified",
+                            "Assigned": "Team Assigned",
+                            "Repair Started": "Repair Work Started",
+                            "Resolved": "Report Resolved"
+                          };
+                          const stageBodies: Record<string, string> = {
+                            "Reported": `Your report for "${report.category}" has been filed and is awaiting review.`,
+                            "Verified": `Your report for "${report.category}" has been verified by municipal authorities.`,
+                            "Assigned": `A response team has been dispatched to resolve "${report.category}".`,
+                            "Repair Started": `Maintenance crew has initiated physical repairs for "${report.category}".`,
+                            "Resolved": `Your report for "${report.category}" has been marked as resolved by an administrator.`
+                          };
+
+                          const title = stageTitles[nextStage] || "Report Updated";
+                          const body = stageBodies[nextStage] || `Your report status has been updated to ${nextStage}.`;
+
+                          await addDoc(collection(db, "notifications"), {
+                            userId: recipientId,
+                            title,
+                            body,
+                            createdAt: serverTimestamp(),
+                            read: false,
+                            reportId: report.id
+                          });
+
+                          if (recipientId !== "anonymous") {
+                            fetch("/api/fcm/notify", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                targetUserId: recipientId,
+                                title,
+                                body
+                              })
+                            }).catch(err => console.warn("FCM trigger failed:", err));
+                          }
                         } catch (err: any) {
                           const { handleFirestoreError, OperationType } = await import("../firebase");
                           handleFirestoreError(err, OperationType.UPDATE, `reports/${report.id}`);
@@ -529,14 +573,43 @@ export default function ReportDetailModal({ report, onClose, onConfirm, isConfir
                         setIsUploadingProof(true);
                         setLocalProofPreview(url);
                         try {
-                          const { doc, updateDoc } = await import("firebase/firestore");
-                          const { db } = await import("../firebase");
+                          const { doc, updateDoc, addDoc, collection, serverTimestamp } = await import("firebase/firestore");
+                          const { db, auth } = await import("../firebase");
                           await updateDoc(doc(db, "reports", report.id), {
                             afterImageUrl: url,
                             status: "Resolved",
                             progressStage: "Resolved",
                             resolvedAt: new Date().toISOString()
                           });
+
+                          // Notify reporter
+                          const recipientId = report.reporterId && report.reporterId !== "anonymous"
+                            ? report.reporterId
+                            : (auth.currentUser?.uid || "anonymous");
+
+                          const title = "Report Resolved";
+                          const body = `Your report for "${report.category}" has been marked as resolved by an administrator (Resolution Proof photo attached).`;
+
+                          await addDoc(collection(db, "notifications"), {
+                            userId: recipientId,
+                            title,
+                            body,
+                            createdAt: serverTimestamp(),
+                            read: false,
+                            reportId: report.id
+                          });
+
+                          if (recipientId !== "anonymous") {
+                            fetch("/api/fcm/notify", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                targetUserId: recipientId,
+                                title,
+                                body
+                              })
+                            }).catch(err => console.warn("FCM trigger failed:", err));
+                          }
                         } catch (err: any) {
                           const { handleFirestoreError, OperationType } = await import("../firebase");
                           handleFirestoreError(err, OperationType.UPDATE, `reports/${report.id}`);
@@ -563,14 +636,43 @@ export default function ReportDetailModal({ report, onClose, onConfirm, isConfir
                             try {
                               const compressedBase64 = await compressImage(base64);
                               setLocalProofPreview(compressedBase64);
-                              const { doc, updateDoc } = await import("firebase/firestore");
-                              const { db } = await import("../firebase");
+                              const { doc, updateDoc, addDoc, collection, serverTimestamp } = await import("firebase/firestore");
+                              const { db, auth } = await import("../firebase");
                               await updateDoc(doc(db, "reports", report.id), {
                                 afterImageUrl: compressedBase64,
                                 status: "Resolved",
                                 progressStage: "Resolved",
                                 resolvedAt: new Date().toISOString()
                               });
+
+                              // Notify reporter
+                              const recipientId = report.reporterId && report.reporterId !== "anonymous"
+                                ? report.reporterId
+                                : (auth.currentUser?.uid || "anonymous");
+
+                              const title = "Report Resolved";
+                              const body = `Your report for "${report.category}" has been marked as resolved by an administrator (Resolution Proof photo uploaded).`;
+
+                              await addDoc(collection(db, "notifications"), {
+                                userId: recipientId,
+                                title,
+                                body,
+                                createdAt: serverTimestamp(),
+                                read: false,
+                                reportId: report.id
+                              });
+
+                              if (recipientId !== "anonymous") {
+                                fetch("/api/fcm/notify", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    targetUserId: recipientId,
+                                    title,
+                                    body
+                                  })
+                                }).catch(err => console.warn("FCM trigger failed:", err));
+                              }
                             } catch (err: any) {
                               const { handleFirestoreError, OperationType } = await import("../firebase");
                               handleFirestoreError(err, OperationType.UPDATE, `reports/${report.id}`);
@@ -626,13 +728,42 @@ export default function ReportDetailModal({ report, onClose, onConfirm, isConfir
                         onClick={async () => {
                           setLocalProofPreview(null);
                           try {
-                            const { doc, updateDoc } = await import("firebase/firestore");
-                            const { db } = await import("../firebase");
+                            const { doc, updateDoc, addDoc, collection, serverTimestamp } = await import("firebase/firestore");
+                            const { db, auth } = await import("../firebase");
                             await updateDoc(doc(db, "reports", report.id), {
                               afterImageUrl: null,
                               status: "Pending",
                               progressStage: "Repair Started"
                             });
+
+                            // Notify reporter
+                            const recipientId = report.reporterId && report.reporterId !== "anonymous"
+                              ? report.reporterId
+                              : (auth.currentUser?.uid || "anonymous");
+
+                            const title = "Resolution Proof Removed";
+                            const body = `An administrator removed the resolution proof for your report on "${report.category}". Status reverted to Repair Started.`;
+
+                            await addDoc(collection(db, "notifications"), {
+                              userId: recipientId,
+                              title,
+                              body,
+                              createdAt: serverTimestamp(),
+                              read: false,
+                              reportId: report.id
+                            });
+
+                            if (recipientId !== "anonymous") {
+                              fetch("/api/fcm/notify", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  targetUserId: recipientId,
+                                  title,
+                                  body
+                                })
+                              }).catch(err => console.warn("FCM trigger failed:", err));
+                            }
                           } catch (err: any) {
                             const { handleFirestoreError, OperationType } = await import("../firebase");
                             handleFirestoreError(err, OperationType.UPDATE, `reports/${report.id}`);

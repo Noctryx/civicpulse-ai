@@ -168,11 +168,15 @@ export default function CommunityFeed() {
       localStorage.setItem("civicpulse_confirmed_reports", JSON.stringify(newConfirmed));
 
       // Notify the original reporter via FCM & Firestore
-      if (targetReport && targetReport.reporterId && auth.currentUser && targetReport.reporterId !== auth.currentUser.uid) {
+      if (targetReport && auth.currentUser) {
+        const recipientId = targetReport.reporterId && targetReport.reporterId !== "anonymous"
+          ? targetReport.reporterId
+          : auth.currentUser.uid;
+
         // 1. Create durable in-app notification in Firestore
         try {
           await addDoc(collection(db, "notifications"), {
-            userId: targetReport.reporterId,
+            userId: recipientId,
             title: "Community Confirmation",
             body: `Your report for "${targetReport.category}" just received a community confirmation.`,
             createdAt: serverTimestamp(),
@@ -184,15 +188,17 @@ export default function CommunityFeed() {
         }
 
         // 2. Trigger FCM push notification
-        fetch("/api/fcm/notify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            targetUserId: targetReport.reporterId,
-            title: "Community Confirmation",
-            body: `Your report for "${targetReport.category}" just received a community confirmation.`
-          })
-        }).catch(err => console.warn("FCM trigger failed:", err));
+        if (recipientId !== "anonymous") {
+          fetch("/api/fcm/notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              targetUserId: recipientId,
+              title: "Community Confirmation",
+              body: `Your report for "${targetReport.category}" just received a community confirmation.`
+            })
+          }).catch(err => console.warn("FCM trigger failed:", err));
+        }
       }
     } catch (err: unknown) {
       alert("Failed to confirm report. Check connection or quota limit.");
