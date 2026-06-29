@@ -6,6 +6,7 @@ import { Search, Filter, CheckCircle2, MapPin, Loader2, AlertTriangle, ArrowUpDo
 import { motion, AnimatePresence } from "motion/react";
 import ReportDetailModal from "./ReportDetailModal";
 import { Skeleton } from "./Skeleton";
+import toast from "react-hot-toast";
 
 export default function AdminPanel() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -452,16 +453,42 @@ export default function AdminPanel() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Simulate Notification Button */}
             <button
-              onClick={() => {
-                fetch("/api/fcm/notify", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    targetUserId: auth.currentUser?.uid,
-                    title: "Test Notification",
-                    body: "This is a simulated push notification.",
-                  }),
-                });
+              onClick={async () => {
+                try {
+                  const res = await fetch("/api/fcm/notify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      targetUserId: auth.currentUser?.uid,
+                      title: "Test Notification",
+                      body: "This is a simulated push notification.",
+                    }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok || data.success === false) {
+                    alert(`Server Response: ${data.error || data.message || "Failed"}\n\nNote: For push notifications to work in AI Studio, you must open the preview in a new tab (to allow Notification permissions) AND add FIREBASE_SERVICE_ACCOUNT to secrets.`);
+                    
+                    // Fallback to local toast so the user can see the UI at least
+                    toast(
+                      (t) => (
+                        <div className="flex flex-col gap-1">
+                          <span className="font-bold text-sm text-slate-800">
+                            Test Notification (Local Fallback)
+                          </span>
+                          <span className="text-sm text-slate-600">
+                            This is a simulated push notification.
+                          </span>
+                        </div>
+                      ),
+                      { duration: 5000, icon: "🔔" }
+                    );
+                  } else {
+                    console.log("FCM response:", data);
+                    alert("Push notification sent to server successfully!");
+                  }
+                } catch (e: any) {
+                  alert(`Network error: ${e.message}`);
+                }
               }}
               className="text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-3xs flex items-center gap-1.5 transition cursor-pointer shrink-0"
             >
