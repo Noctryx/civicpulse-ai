@@ -1,5 +1,5 @@
 import { useState, useEffect, MouseEvent } from "react";
-import { collection, doc, updateDoc, increment, onSnapshot, query, orderBy } from "firebase/firestore";
+import { collection, doc, updateDoc, increment, arrayUnion, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType, auth, onAuthStateChanged } from "../firebase";
 import { MapPin, ThumbsUp, Calendar, CheckCircle, Clock, AlertTriangle, Eye, ArrowUpDown, Tag, Loader2, Trophy, Medal, Crown, Star } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -123,6 +123,7 @@ export default function CommunityFeed() {
             reporterName: data.reporterName || "",
             reporterEmail: data.reporterEmail || "",
             reporterPhoto: data.reporterPhoto || "",
+            confirmedBy: data.confirmedBy || [],
           } as Report);
         });
 
@@ -143,14 +144,23 @@ export default function CommunityFeed() {
     event.preventDefault();
     if (confirmedIds.includes(reportId)) return; // Already confirmed
 
+    const targetReport = reports.find(r => r.id === reportId);
+    if (currentUser && targetReport?.confirmedBy?.includes(currentUser.uid)) {
+      return; // Already confirmed by this user
+    }
+
     const collectionPath = `reports`;
     try {
       const docRef = doc(db, collectionPath, reportId);
       
-      // Atomic increment confirmations by 1
-      await updateDoc(docRef, {
+      const updateData: any = {
         confirmations: increment(1),
-      });
+      };
+      if (currentUser) {
+        updateData.confirmedBy = arrayUnion(currentUser.uid);
+      }
+
+      await updateDoc(docRef, updateData);
 
       // Update local tracking
       const newConfirmed = [...confirmedIds, reportId];
@@ -158,7 +168,6 @@ export default function CommunityFeed() {
       localStorage.setItem("civicpulse_confirmed_reports", JSON.stringify(newConfirmed));
 
       // Notify the original reporter via FCM
-      const targetReport = reports.find(r => r.id === reportId);
       if (targetReport && targetReport.reporterId && auth.currentUser && targetReport.reporterId !== auth.currentUser.uid) {
         fetch("/api/fcm/notify", {
           method: "POST",
@@ -433,23 +442,28 @@ export default function CommunityFeed() {
                         
                         {/* Confirmation CTA */}
                         <div className="relative group">
-                          <button
-                            onClick={(e) => handleConfirm(report.id, e)}
-                            disabled={confirmedIds.includes(report.id) || report.status === "Resolved"}
-                            className={`text-xs font-bold py-1.5 px-3 rounded-lg transition-all flex items-center gap-1.5 shadow-3xs cursor-pointer ${
-                              confirmedIds.includes(report.id)
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                : report.status === "Resolved"
-                                ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
-                                : "bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-700 hover:border-indigo-300 dark:hover:border-indigo-600"
-                            }`}
-                          >
-                            <ThumbsUp className={`w-3.5 h-3.5 ${confirmedIds.includes(report.id) ? "fill-emerald-600" : ""}`} />
-                            {confirmedIds.includes(report.id) 
-                              ? `Confirmed (${report.confirmations})` 
-                              : `Confirm (${report.confirmations})`
-                            }
-                          </button>
+                          {(() => {
+                            const isConfirmed = confirmedIds.includes(report.id) || !!(currentUser && report.confirmedBy?.includes(currentUser.uid));
+                            return (
+                              <button
+                                onClick={(e) => handleConfirm(report.id, e)}
+                                disabled={isConfirmed || report.status === "Resolved"}
+                                className={`text-xs font-bold py-1.5 px-3 rounded-lg transition-all flex items-center gap-1.5 shadow-3xs cursor-pointer ${
+                                  isConfirmed
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : report.status === "Resolved"
+                                    ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
+                                    : "bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-700 hover:border-indigo-300 dark:hover:border-indigo-600"
+                                }`}
+                              >
+                                <ThumbsUp className={`w-3.5 h-3.5 ${isConfirmed ? "fill-emerald-600" : ""}`} />
+                                {isConfirmed 
+                                  ? `Confirmed (${report.confirmations})` 
+                                  : `Confirm (${report.confirmations})`
+                                }
+                              </button>
+                            );
+                          })()}
 
                           {/* Educational Tooltip */}
                           <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block w-48 p-2.5 bg-slate-900 text-[10px] text-white rounded-lg shadow-md z-30 pointer-events-none transition-all duration-200">
@@ -597,7 +611,7 @@ export default function CommunityFeed() {
           onConfirm={(id, e) => {
             handleConfirm(id, e);
           }}
-          isConfirmed={confirmedIds.includes(selectedReport.id)}
+          isConfirmed={confirmedIds.includes(selectedReport.id) || !!(currentUser && selectedReport.confirmedBy?.includes(currentUser.uid))}
         />
       )}
     </div>

@@ -33,6 +33,7 @@ export interface Report {
   audioTranscript?: string;
   videoUrl?: string;
   imageMimeType?: string;
+  confirmedBy?: string[];
 }
 
 export interface AnalysisResult {

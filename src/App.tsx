@@ -146,10 +146,14 @@ export default function App() {
         localStorage.setItem("google_access_token", credential.accessToken);
       }
     } catch (err: any) {
-      console.error("Sign-in error: ", err);
-      setAuthError(
-        err.message || "Failed to complete Google Sign-in. Please try again.",
-      );
+      if (err.code === "auth/popup-closed-by-user") {
+        console.warn("Sign-in popup closed by user.");
+      } else {
+        console.error("Sign-in error: ", err);
+        setAuthError(
+          err.message || "Failed to complete Google Sign-in. Please try again.",
+        );
+      }
     } finally {
       setSignInLoading(false);
     }

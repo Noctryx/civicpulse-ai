@@ -479,7 +479,7 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           description,
-          image,
+          image: compressedImage || image,
           mimeType: imageMimeType,
           latitude,
           longitude,
