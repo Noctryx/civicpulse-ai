@@ -455,8 +455,9 @@ export default function ReportDetailModal({ report, onClose, onConfirm, isConfir
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Update Stage</label>
+                    <label htmlFor={`update-stage-${report.id}`} className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Update Stage</label>
                     <select
+                      id={`update-stage-${report.id}`}
                       value={report.progressStage || "Reported"}
                       onChange={async (e) => {
                         const nextStage = e.target.value;
@@ -533,8 +534,9 @@ export default function ReportDetailModal({ report, onClose, onConfirm, isConfir
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Assign Team</label>
+                    <label htmlFor={`assign-team-${report.id}`} className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Assign Team</label>
                     <input
+                      id={`assign-team-${report.id}`}
                       type="text"
                       placeholder="e.g. Road Crew Delta"
                       defaultValue={report.assignedTeam || ""}
@@ -559,9 +561,10 @@ export default function ReportDetailModal({ report, onClose, onConfirm, isConfir
 
                 {/* Upload Resolution Proof */}
                 <div className="pt-1">
-                  <label className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Submit Resolution Proof Photo</label>
+                  <label htmlFor={`resolution-proof-${report.id}`} className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Submit Resolution Proof Photo</label>
                   <div className="flex gap-2">
                     <input
+                      id={`resolution-proof-${report.id}`}
                       type="text"
                       placeholder="Paste image URL..."
                       key={report.afterImageUrl || ""}

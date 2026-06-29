@@ -791,7 +791,7 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
               <form onSubmit={handleAnalyze} className="space-y-6">
                 {/* Image & Video Upload Zone */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-800 dark:text-slate-200 mb-2">
+                  <label htmlFor="issue-media-upload" className="block text-sm font-semibold text-gray-800 dark:text-slate-200 mb-2">
                     Upload Issue Photo or Video
                   </label>
                   <div
@@ -820,6 +820,7 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
                   >
                     <input
                       type="file"
+                      id="issue-media-upload"
                       ref={fileInputRef}
                       onChange={handleFileChange}
                       accept="image/*,video/*"
