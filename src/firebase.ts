@@ -8,6 +8,7 @@ import {
   onAuthStateChanged,
   User,
 } from "firebase/auth";
+import { getMessaging, isSupported } from "firebase/messaging";
 import firebaseConfig from "../firebase-applet-config.json";
 
 // Initialize Firebase App
@@ -15,6 +16,14 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore with Database ID from the config
 export const db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
+
+// Initialize Messaging
+export const messaging = async () => {
+  if (await isSupported()) {
+    return getMessaging(app);
+  }
+  return null;
+};
 
 // Initialize Auth
 export const auth = getAuth(app);

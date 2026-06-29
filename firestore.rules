@@ -123,5 +123,11 @@ service cloud.firestore {
       // Anyone (including guests and the background server-side daemon) can manage alerts
       allow create, update, delete: if true;
     }
+
+    // Rules for users collection (FCM Tokens)
+    match /users/{userId} {
+      // Users can read and write to their own user document
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
   }
 }

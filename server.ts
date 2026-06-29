@@ -6,6 +6,9 @@ import { createServer as createViteServer } from "vite";
 import fs from "fs";
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs, addDoc } from "firebase/firestore";
+import { initializeApp as initAdmin, cert } from "firebase-admin/app";
+import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
+import { getMessaging as getAdminMessaging } from "firebase-admin/messaging";
 
 dotenv.config();
 
@@ -15,6 +18,52 @@ const PORT = 3000;
 // Set up body parsers with increased limits for base64 image uploads
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
+// Initialize Firebase Admin for FCM if service account is provided
+let fcmReady = false;
+try {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    initAdmin({
+      credential: cert(serviceAccount)
+    });
+    fcmReady = true;
+    console.log("Firebase Admin SDK initialized for FCM.");
+  } else {
+    console.log("FIREBASE_SERVICE_ACCOUNT not found. FCM push notifications will not be sent.");
+  }
+} catch (e: any) {
+  console.warn("Failed to initialize Firebase Admin SDK:", e.message);
+}
+
+app.post("/api/fcm/notify", async (req, res) => {
+  if (!fcmReady) {
+    // Return success to gracefully degrade instead of crashing the client flow
+    return res.json({ success: false, message: "FCM not configured on the server." });
+  }
+
+  try {
+    const { targetUserId, title, body } = req.body;
+    
+    const userDoc = await getAdminFirestore().collection('users').doc(targetUserId).get();
+    const tokens = userDoc.data()?.fcmTokens || [];
+
+    if (tokens.length === 0) {
+      return res.status(404).json({ error: "No FCM tokens found for user." });
+    }
+
+    const message = {
+      notification: { title, body },
+      tokens: tokens,
+    };
+
+    const response = await getAdminMessaging().sendEachForMulticast(message);
+    return res.json({ success: true, response });
+  } catch (error: any) {
+    console.error("FCM Notify Error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
 
 // Initialize Gemini API
 let ai: GoogleGenAI | null = null;

@@ -156,6 +156,20 @@ export default function CommunityFeed() {
       const newConfirmed = [...confirmedIds, reportId];
       setConfirmedIds(newConfirmed);
       localStorage.setItem("civicpulse_confirmed_reports", JSON.stringify(newConfirmed));
+
+      // Notify the original reporter via FCM
+      const targetReport = reports.find(r => r.id === reportId);
+      if (targetReport && targetReport.reporterId && auth.currentUser && targetReport.reporterId !== auth.currentUser.uid) {
+        fetch("/api/fcm/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            targetUserId: targetReport.reporterId,
+            title: "Community Confirmation",
+            body: `Your report for "${targetReport.category}" just received a community confirmation.`
+          })
+        }).catch(err => console.log("FCM trigger failed:", err));
+      }
     } catch (err: unknown) {
       alert("Failed to confirm report. Check connection or quota limit.");
       handleFirestoreError(err, OperationType.UPDATE, `${collectionPath}/${reportId}`);

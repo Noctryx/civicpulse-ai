@@ -3,6 +3,7 @@ import ReportForm from "./components/ReportForm";
 import CommunityFeed from "./components/CommunityFeed";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import AdminPanel from "./components/AdminPanel";
+import FCMProvider from "./components/FCMProvider";
 import CityAssistant from "./components/CityAssistant";
 import {
   Sparkles,
@@ -299,6 +300,7 @@ export default function App() {
       className="min-h-screen flex flex-col justify-between bg-[#F8FAFC] dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 transition-colors duration-200"
       id="app-authorized-screen"
     >
+      <FCMProvider />
       {/* City Portal Header */}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
