@@ -29,6 +29,7 @@ import {
   Mic,
   MicOff,
   HardDrive,
+  Camera,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { SeverityType, AnalysisResult } from "../types";
@@ -69,6 +70,7 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
   const [successMessage, setSuccessMessage] = useState<string>("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // Speech Recorder voice input states
   const [isListening, setIsListening] = useState(false);
@@ -77,6 +79,52 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Camera capture states
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      cameraStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setIsCameraActive(true);
+    } catch (err) {
+      console.error("Camera access denied:", err);
+      alert("Camera permission denied or unavailable.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = null;
+    }
+    setIsCameraActive(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const canvas = document.createElement("canvas");
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+        setImage(dataUrl);
+        setImageMimeType("image/jpeg");
+        setCompressedImage(null);
+        stopCamera();
+      }
+    }
+  };
 
   const startListening = async () => {
     setSpeechError(null);
@@ -218,6 +266,15 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
         console.log("Google Picker API loaded.");
       });
     }
+
+    return () => {
+      if (cameraStreamRef.current) {
+        cameraStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+    };
   }, []);
 
   const openDrivePicker = (e: any) => {
@@ -736,6 +793,39 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
                           Processing media file...
                         </p>
                       </div>
+                    ) : isCameraActive ? (
+                      <div className="w-full max-h-[300px] flex flex-col items-center gap-3 relative">
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          className="max-h-[220px] rounded-lg object-contain shadow-sm border border-gray-100 dark:border-slate-800 w-full"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              capturePhoto();
+                            }}
+                            className="text-[10px] bg-indigo-600 text-white px-4 py-2 rounded-full font-bold hover:bg-indigo-700 transition"
+                          >
+                            <Camera className="w-3.5 h-3.5 inline mr-1" />
+                            Capture Photo
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              stopCamera();
+                            }}
+                            className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-4 py-2 rounded-full font-bold hover:bg-slate-300 transition"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
                     ) : image ? (
                       <div className="relative w-full max-h-[220px] flex justify-center items-center gap-4">
                         <div className="relative rounded-lg">
@@ -816,7 +906,27 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
                             : "Supports PNG, JPG, WEBP, WEBM, MP4 up to 5MB"}
                         </p>
                         {!analyzing && (
-                          <div className="flex justify-center mt-3">
+                          <div className="flex justify-center mt-3 gap-2 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startCamera();
+                              }}
+                              className="text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1.5 rounded-full font-semibold border border-indigo-200 dark:border-indigo-800 flex items-center hover:bg-indigo-100 dark:hover:bg-indigo-800 transition"
+                            >
+                              <Camera className="w-3.5 h-3.5 mr-1" />
+                              Take Photo / Video
+                            </button>
+                            <input
+                              type="file"
+                              ref={cameraInputRef}
+                              onChange={handleFileChange}
+                              accept="image/*,video/*"
+                              capture="environment"
+                              className="hidden"
+                              disabled={analyzing || readingImage}
+                            />
                             <button
                               type="button"
                               onClick={openDrivePicker}
