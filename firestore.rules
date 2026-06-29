@@ -64,7 +64,8 @@ service cloud.firestore {
         && (!('repeatedFailureMessage' in data) || data.repeatedFailureMessage == null || (data.repeatedFailureMessage is string && data.repeatedFailureMessage.size() <= 5000))
         && (!('repeatedFailureRecommendation' in data) || data.repeatedFailureRecommendation == null || (data.repeatedFailureRecommendation is string && data.repeatedFailureRecommendation.size() <= 5000))
         && (!('afterImageUrl' in data) || data.afterImageUrl == null || (data.afterImageUrl is string && data.afterImageUrl.size() <= 5000000))
-        && (!('resolvedAt' in data) || data.resolvedAt == null || (data.resolvedAt is string && data.resolvedAt.size() <= 100));
+        && (!('resolvedAt' in data) || data.resolvedAt == null || (data.resolvedAt is string && data.resolvedAt.size() <= 100))
+        && (!('confirmedBy' in data) || data.confirmedBy == null || (data.confirmedBy is list));
     }
 
     function isValidAlert(data) {
@@ -86,7 +87,7 @@ service cloud.firestore {
     // Helper update transition conditions
     function isUpvoteAction() {
       return incoming().confirmations == existing().confirmations + 1
-        && incoming().diff(existing()).affectedKeys().hasOnly(['confirmations']);
+        && incoming().diff(existing()).affectedKeys().hasOnly(['confirmations', 'confirmedBy']);
     }
 
     function isDispatcherAction() {

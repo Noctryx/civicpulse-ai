@@ -1,6 +1,6 @@
 import { useState, useEffect, MouseEvent } from "react";
 import { collection, doc, updateDoc, onSnapshot, query, orderBy } from "firebase/firestore";
-import { db, handleFirestoreError, OperationType } from "../firebase";
+import { db, auth, handleFirestoreError, OperationType } from "../firebase";
 import { Report } from "../types";
 import { Search, Filter, CheckCircle2, MapPin, Loader2, AlertTriangle, ArrowUpDown, Calendar, HelpCircle, FileText, Eye, Bell, ShieldAlert, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -450,6 +450,24 @@ export default function AdminPanel() {
 
           {/* Search and Filters box */}
           <div className="flex flex-wrap items-center gap-3">
+            {/* Simulate Notification Button */}
+            <button
+              onClick={() => {
+                fetch("/api/fcm/notify", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    targetUserId: auth.currentUser?.uid,
+                    title: "Test Notification",
+                    body: "This is a simulated push notification.",
+                  }),
+                });
+              }}
+              className="text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-3xs flex items-center gap-1.5 transition cursor-pointer shrink-0"
+            >
+              <Bell className="w-3.5 h-3.5" /> Simulate Push
+            </button>
+
             {/* Daily Brief Button */}
             <button
               onClick={handleGenerateDispatchBrief}

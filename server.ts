@@ -21,12 +21,15 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // Initialize Firebase Admin for FCM if service account is provided
 let fcmReady = false;
+let adminDb: any = null;
 try {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
     initAdmin({
       credential: cert(serviceAccount)
     });
+    adminDb = getAdminFirestore();
+    adminDb.settings({ databaseId: "ai-studio-19ea99b1-ecf0-4c28-ae07-4ceb923079a3" });
     fcmReady = true;
     console.log("Firebase Admin SDK initialized for FCM.");
   } else {
@@ -37,7 +40,7 @@ try {
 }
 
 app.post("/api/fcm/notify", async (req, res) => {
-  if (!fcmReady) {
+  if (!fcmReady || !adminDb) {
     // Return success to gracefully degrade instead of crashing the client flow
     return res.json({ success: false, message: "FCM not configured on the server." });
   }
@@ -45,7 +48,7 @@ app.post("/api/fcm/notify", async (req, res) => {
   try {
     const { targetUserId, title, body } = req.body;
     
-    const userDoc = await getAdminFirestore().collection('users').doc(targetUserId).get();
+    const userDoc = await adminDb.collection('users').doc(targetUserId).get();
     const tokens = userDoc.data()?.fcmTokens || [];
 
     if (tokens.length === 0) {
