@@ -15,6 +15,12 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
+// Set permissive Cross-Origin-Opener-Policy to allow OAuth and Picker popups to communicate back
+app.use((req, res, next) => {
+  res.header("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  next();
+});
+
 // Set up body parsers with increased limits for base64 image uploads
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));

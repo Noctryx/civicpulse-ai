@@ -358,6 +358,7 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
     const picker = new (window as any).google.picker.PickerBuilder()
       .addView(view)
       .setOAuthToken(accessToken)
+      .setDeveloperKey(process.env.GOOGLE_MAPS_PLATFORM_KEY || "")
       .setCallback(pickerCallback)
       .setOrigin(pickerOrigin)
       .build();
