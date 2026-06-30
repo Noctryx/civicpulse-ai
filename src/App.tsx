@@ -5,6 +5,7 @@ import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import AdminPanel from "./components/AdminPanel";
 import FCMProvider from "./components/FCMProvider";
 import CityAssistant from "./components/CityAssistant";
+import LegalPages from "./components/LegalPages";
 import {
   Sparkles,
   BarChart3,
@@ -38,6 +39,7 @@ import {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("report");
+  const [legalView, setLegalView] = useState<"none" | "privacy" | "terms">("none");
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [signInLoading, setSignInLoading] = useState(false);
@@ -186,16 +188,23 @@ export default function App() {
   useEffect(() => {
     const handleUrlRouting = () => {
       const path = window.location.pathname;
-      if (path === "/admin") {
-        setActiveTab("admin");
-      } else if (path === "/dashboard" || path === "/analytics") {
-        setActiveTab("dashboard");
-      } else if (path === "/feed" || path === "/community") {
-        setActiveTab("feed");
-      } else if (path === "/assistant" || path === "/guide") {
-        setActiveTab("assistant");
+      if (path === "/privacy") {
+        setLegalView("privacy");
+      } else if (path === "/terms") {
+        setLegalView("terms");
       } else {
-        setActiveTab("report");
+        setLegalView("none");
+        if (path === "/admin") {
+          setActiveTab("admin");
+        } else if (path === "/dashboard" || path === "/analytics") {
+          setActiveTab("dashboard");
+        } else if (path === "/feed" || path === "/community") {
+          setActiveTab("feed");
+        } else if (path === "/assistant" || path === "/guide") {
+          setActiveTab("assistant");
+        } else {
+          setActiveTab("report");
+        }
       }
     };
 
@@ -207,6 +216,7 @@ export default function App() {
   }, []);
 
   const handleTabChange = (tab: string) => {
+    setLegalView("none");
     setActiveTab(tab);
     let path = "/";
     if (tab === "admin") path = "/admin";
@@ -214,6 +224,12 @@ export default function App() {
     else if (tab === "feed") path = "/feed";
     else if (tab === "assistant") path = "/assistant";
 
+    window.history.pushState({}, "", path);
+  };
+
+  const handleLegalChange = (view: "none" | "privacy" | "terms") => {
+    setLegalView(view);
+    const path = view === "none" ? "/" : `/${view}`;
     window.history.pushState({}, "", path);
   };
 
@@ -267,6 +283,17 @@ export default function App() {
           </p>
         </div>
       </div>
+    );
+  }
+
+  // Render public legal documents (Privacy, Terms) without requiring login
+  if (legalView !== "none") {
+    return (
+      <LegalPages
+        view={legalView}
+        onBack={() => handleLegalChange("none")}
+        isDarkMode={isDarkMode}
+      />
     );
   }
 
@@ -366,15 +393,39 @@ export default function App() {
                 ✕ {authError}
               </div>
             )}
+
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-5 text-left space-y-2">
+              <h3 className="text-[10px] font-bold text-indigo-900 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Application Purpose
+              </h3>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                <strong>CivicPulse AI</strong> is a community-driven smart city infrastructure reporting platform that connects local citizens with municipal utility and maintenance teams. Citizens use the application to log real-time visual reports of potholes, public lighting failures, and pipeline leaks. Our built-in artificial intelligence models (powered by Google Gemini) automatically categorize, evaluate gravity, and draft action plans to accelerate repair workflows.
+              </p>
+            </div>
           </motion.div>
         </main>
 
         {/* Footer */}
-        <footer className="bg-slate-900 border-t border-slate-800 py-4">
-          <div className="max-w-7xl mx-auto px-4 text-center">
+        <footer className="bg-slate-900 border-t border-slate-800 py-6">
+          <div className="max-w-7xl mx-auto px-4 flex flex-col items-center gap-2 text-center">
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
               &copy; 2026 CivicPulse AI • Empowering Communities securely
             </p>
+            <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              <button
+                onClick={() => handleLegalChange("privacy")}
+                className="hover:text-indigo-400 transition cursor-pointer"
+              >
+                Privacy Policy
+              </button>
+              <span className="text-slate-600">•</span>
+              <button
+                onClick={() => handleLegalChange("terms")}
+                className="hover:text-indigo-400 transition cursor-pointer"
+              >
+                Terms of Service
+              </button>
+            </div>
           </div>
         </footer>
       </div>
@@ -731,7 +782,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-900 border-t border-slate-800 py-4 pb-24 md:pb-4">
+      <footer className="bg-slate-900 border-t border-slate-800 py-6 pb-24 md:pb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-wrap gap-4 md:gap-6 justify-center md:justify-start">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
@@ -750,8 +801,25 @@ export default function App() {
               Status: <span className="text-emerald-400">● Live Streaming</span>
             </span>
           </div>
-          <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
-            &copy; 2026 CivicPulse AI • Empowering Communities • {user.email}
+          <div className="flex flex-col md:flex-row items-center md:items-end gap-2 text-right">
+            <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 justify-center md:justify-end">
+              <button
+                onClick={() => handleLegalChange("privacy")}
+                className="hover:text-indigo-400 transition cursor-pointer text-[9px]"
+              >
+                Privacy Policy
+              </button>
+              <span className="text-slate-600">•</span>
+              <button
+                onClick={() => handleLegalChange("terms")}
+                className="hover:text-indigo-400 transition cursor-pointer text-[9px]"
+              >
+                Terms of Service
+              </button>
+            </div>
+            <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
+              &copy; 2026 CivicPulse AI • Empowering Communities • {user?.email}
+            </div>
           </div>
         </div>
       </footer>

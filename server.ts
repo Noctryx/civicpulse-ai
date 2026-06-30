@@ -810,7 +810,7 @@ app.post("/api/reports/forecast", async (req, res) => {
       try {
         console.log(`[Forecast API] Generating failure forecast for cluster of ${reports.length} reports...`);
         const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-2.5-flash",
           contents: `You are an expert Predictive Urban Infrastructure AI. Analyze the following geographic cluster of reported municipal complaints. Your job is to identify if these reports point to an impending, systemic, or severe infrastructure failure (e.g. a water main burst, deep road sinkhole, electrical grid blackout, bridge structural issue) within a 30 to 60-day window.
 
 Calculate a realistic, data-driven probability (0 to 100), define the specific target asset system, assess severity, and provide a clear, professional rationale with actionable recommendations.
@@ -955,7 +955,7 @@ app.post("/api/reports/dispatch-brief", async (req, res) => {
       try {
         console.log(`[Dispatch Brief] Generating daily field brief for ${reports.length} pending reports...`);
         const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-2.5-flash",
           contents: `You are the chief Operations Dispatch Coordinator AI for City Public Works. You have been handed a list of active, pending, unresolved public service complaints in the city. 
           
 Your task is to analyze these complaints geographically and by category, select the highest-urgency items, and synthesize an elegant, highly actionable field crew briefing for today.
