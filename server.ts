@@ -15,9 +15,10 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-// Set permissive Cross-Origin-Opener-Policy to allow OAuth and Picker popups to communicate back
+// Set permissive Cross-Origin headers to allow OAuth and Picker popups to communicate back
 app.use((req, res, next) => {
-  res.header("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  res.header("Cross-Origin-Opener-Policy", "unsafe-none");
+  res.header("Cross-Origin-Embedder-Policy", "unsafe-none");
   next();
 });
 
