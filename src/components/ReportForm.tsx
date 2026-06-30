@@ -35,6 +35,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { SeverityType, AnalysisResult } from "../types";
 import { compressImage, getVideoThumbnail } from "../utils";
+import firebaseConfig from "../../firebase-applet-config.json";
 
 interface ReportFormProps {
   onSuccess: () => void;
@@ -358,7 +359,6 @@ export default function ReportForm({ onSuccess, user }: ReportFormProps) {
     const picker = new (window as any).google.picker.PickerBuilder()
       .addView(view)
       .setOAuthToken(accessToken)
-      .setDeveloperKey(process.env.GOOGLE_MAPS_PLATFORM_KEY || "")
       .setCallback(pickerCallback)
       .setOrigin(pickerOrigin)
       .build();
